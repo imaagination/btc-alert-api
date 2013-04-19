@@ -4,6 +4,8 @@ gem 'sinatra-activerecord'
 gem 'pg'
 gem 'rake'
 gem 'iron_mq'
+gem 'thin'
+gem 'foreman'
 
 group :test do
 	gem 'rack-test'

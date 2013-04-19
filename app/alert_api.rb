@@ -11,6 +11,7 @@ require 'iron_mq'
 ActiveRecord::Base.include_root_in_json = false
 
 class App < Sinatra::Base
+	use ActiveRecord::ConnectionAdapters::ConnectionManagement
 
 	get '/' do
 		'OK'

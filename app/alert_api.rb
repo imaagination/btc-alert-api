@@ -97,7 +97,9 @@ class App < Sinatra::Base
 				end
 			end
 			content_type :json
-			{ status: "success", price: price }.to_json
+			prices_hash = price.attributes
+			prices_hash["timestamp"] = price.timestamp.to_i * 1000
+			{ status: "success", price: prices_hash }.to_json
 		else
 			status 400
 			{ status: "failure", messages: price.errors.full_messages }.to_json

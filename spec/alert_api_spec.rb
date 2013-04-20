@@ -125,7 +125,6 @@ describe "Pricing API" do
 
 	it "should record prices posted to the API" do
 		post '/price', 'timestamp=1366255439000&market=MTGOX&price=70.5'
-		puts last_response.body
 		last_response.should be_ok
 		Price.all.size.should == 1
 		post '/price', 'timestamp=1366255539000&market=MTGOX&price=70.5'
@@ -136,6 +135,12 @@ describe "Pricing API" do
 	it "should reject poorly formed prices" do
 		post '/price', 'timestamp=garbage'
 		last_response.should be_bad_request
+	end
+
+	it "should return a UNIX timestamp in the timestamp field" do
+		post '/price', 'timestamp=1366255439000&market=MTGOX&price=70.5'
+		price = JSON.parse(last_response.body)
+		price["price"]["timestamp"].should == 1366255439000
 	end
 end
 

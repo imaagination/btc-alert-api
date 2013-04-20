@@ -80,6 +80,11 @@ describe "Alert CRUD API" do
 		Alert.all.size.should == 0
 	end
 
+	it "should return not found on deleting nonexistent alert" do
+		delete "/alerts/12345"
+		last_response.should be_not_found
+	end
+
 	it "should update alerts" do
 		alert = Alert.new({:delivery_type => "SMS",
 			:destination => "1234567890",

@@ -56,7 +56,7 @@ class App < Sinatra::Base
 	end
 
 	delete '/alerts/:id' do
-		alert = Alert.find(params[:id])
+		alert = Alert.find_by_id(params[:id])
 		if alert.nil? 
 			status 404
 			{ status: "failure", messages: [ "Alert not found" ] }.to_json

@@ -1,6 +1,7 @@
 require 'spec_helper'
 require File.dirname(__FILE__) + '/../app/alert_api.rb'
 require File.dirname(__FILE__) + '/../lib/alert_manager.rb'
+require 'json'
 require 'pp'
 
 set :environment, :test
@@ -13,18 +14,21 @@ describe "Alert CRUD API" do
 	it "should load the health check" do
 		get '/'
 		last_response.should be_ok
-		last_response.body.should == 'OK'
+		parsed_response = JSON.parse(last_response.body)
+		parsed_response['status'].should == 'OK'
 	end
 
 	it "should reject empty alerts" do
 		post '/alerts'
 		last_response.should be_bad_request
+		body = JSON.parse(last_response.body)
+		body["status"].should == "failure"
 	end
 
 	it "should create well formed alerts" do
 		post '/alerts', 'delivery_type=SMS&destination=0123456789&threshold=45.267&alert_when=OVER&user_id=test@example.com'
 		result = JSON.parse(last_response.body)
-		result['id'].should_not == nil
+		result['alerts'][0]['id'].should_not == nil
 	end
 
 	it "should return a list of alerts" do
@@ -36,7 +40,7 @@ describe "Alert CRUD API" do
 		alert.save
 		get '/alerts?user_id=test@example.com'
 		returned_alerts = JSON.parse(last_response.body)
-		returned_alerts.size.should == 1
+		returned_alerts["alerts"].size.should == 1
 	end
 
 	it "should reject requests that do not specify a user" do
@@ -59,8 +63,8 @@ describe "Alert CRUD API" do
 		alert2.save
 		get '/alerts?user_id=test@example.com' 
 		returned_alerts = JSON.parse(last_response.body)
-		returned_alerts.size.should == 1
-		returned_alerts[0]['user_id'].should == "test@example.com"		
+		returned_alerts["alerts"].size.should == 1
+		returned_alerts["alerts"][0]['user_id'].should == "test@example.com"		
 	end
 
 	it "should delete alerts" do
@@ -74,6 +78,19 @@ describe "Alert CRUD API" do
 		delete "/alerts/#{alert.id}"
 		last_response.should be_ok
 		Alert.all.size.should == 0
+	end
+
+	it "should update alerts" do
+		alert = Alert.new({:delivery_type => "SMS",
+			:destination => "1234567890",
+			:threshold => 70.2,
+			:alert_when => "OVER",
+			:user_id => "test@example.com"})
+		alert.save
+		put "/alerts/#{alert.id}", 'delivery_type=SMS&destination=1234567891&threshold=45.267&alert_when=OVER&user_id=test@example.com'
+		last_response.status.should == 200
+		parsed_response = JSON.parse(last_response.body)
+		parsed_response["alerts"][0]["destination"].should == "1234567891"
 	end
 end
 

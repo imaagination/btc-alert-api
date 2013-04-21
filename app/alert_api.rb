@@ -80,20 +80,28 @@ class App < Sinatra::Base
 				# Find the triggered alerts
 				beg_val = last_prices[1].price
 				end_val = last_prices[0].price
-				alerts = AlertManager.get_alerts(beg_val, end_val).to_a
+				sms_alerts = AlertManager.get_sms_alerts(beg_val, end_val).to_a
+				email_alerts = AlertManager.get_email_alerts(beg_val, end_val).to_a
 
-				if alerts.size > 0
+				ironmq = IronMQ::Client.new({:token => $config['IRON_KEY'],
+					:project_id => $config['IRON_PROJECT']})
+
+				if email_alerts.size > 0
 					# Convert alerts to array of hashes
-					alerts.map! {|i| { :body => i.attributes.merge({:price => end_val}).to_json } }
+					email_alerts.map! {|i| { :body => i.attributes.merge({:price => end_val}).to_json } }
 
-					# Initialize queue
-					ironmq = IronMQ::Client.new({:token => $config['IRON_KEY'],
-						:project_id => $config['IRON_PROJECT']})
-					queue = ironmq.queue("email_alerts")
+					email_queue = ironmq.queue("email_alerts")
+					puts "Posting #{email_alerts.size} email alert(s)"
+					email_queue.post(email_alerts)
+				end
 
-					# Send alerts to queue
-					pp alerts
-					queue.post(alerts)
+				if sms_alerts.size > 0
+					# Convert alerts to array of hashes
+					sms_alerts.map! {|i| { :body => i.attributes.merge({:price => end_val}).to_json } }
+
+					sms_queue = ironmq.queue("sms_alerts")
+					sms_queue.post(sms_alerts)
+					puts "Posting #{sms_alerts.size} sms alert(s)"
 				end
 			end
 			content_type :json

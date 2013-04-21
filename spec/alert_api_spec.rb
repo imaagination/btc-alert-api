@@ -101,23 +101,49 @@ end
 
 describe "Pricing API" do
 	before(:each) do
-		@ironmq = IronMQ::Client.new(:token => "TEST_TOKEN", 
-			:project_id => "12345678901234567890ABCD")
-		response = IronMQ::ResponseBase.new({ :result => "TEST_DATA" })
-		@queue = double("queue", :post => response)
-		@ironmq.stub(:queue).and_return(@queue)
-		IronMQ::Client.stub(:new).and_return(@ironmq)
-	end
-
-	it "should enqueue triggered alerts" do
-		alert = Alert.new({ :delivery_type => "SMS",
+		# Data
+		sms_alert = Alert.new({ :delivery_type => "SMS",
 			:destination => "1234567890",
 			:threshold => 60.01,
 			:alert_when => "OVER",
 			:user_id => "test@example.com"})
-		AlertManager.stub(:get_alerts).and_return([alert])
+		email_alert = Alert.new({ :delivery_type => "EMAIL",
+			:destination => "test@example.com",
+			:threshold => 60.01,
+			:alert_when => "OVER",
+			:user_id => "test@example.com"})
+
+		# Alert stubs
+		AlertManager.stub(:get_sms_alerts).and_return([sms_alert])
+		AlertManager.stub(:get_email_alerts).and_return([email_alert])
+		AlertManager.stub(:get_alerts).and_return([sms_alert, email_alert])
+
+		# Queue stubs
+		@ironmq = IronMQ::Client.new(:token => "TEST_TOKEN", 
+			:project_id => "12345678901234567890ABCD")
+		response = IronMQ::ResponseBase.new({ :result => "TEST_DATA" })
+		@email_queue = double("email_queue", :post => response)
+		@sms_queue = double("sms_queue", :post => response)
+		@ironmq.stub(:queue).with("email_alerts") do
+			@email_queue	
+		end
+		@ironmq.stub(:queue).with("sms_alerts") do
+			@sms_queue
+		end
+		IronMQ::Client.stub(:new).and_return(@ironmq)
+	end
+
+	it "should enqueue triggered SMS alerts" do
 		@ironmq.should_receive(:queue) 
-		@queue.should_receive(:post)
+		@sms_queue.should_receive(:post)
+		post '/price', 'timestamp=1366255439000&market=MTGOX&price=45.123'
+		post '/price', 'timestamp=1366255539000&market=MTGOX&price=89.223'
+		last_response.status.should == 200
+	end
+
+	it "should enqueue triggered EMAIL alerts" do
+		@ironmq.should_receive(:queue) 
+		@email_queue.should_receive(:post)
 		post '/price', 'timestamp=1366255439000&market=MTGOX&price=45.123'
 		post '/price', 'timestamp=1366255539000&market=MTGOX&price=89.223'
 		last_response.status.should == 200
@@ -125,10 +151,10 @@ describe "Pricing API" do
 
 	it "should record prices posted to the API" do
 		post '/price', 'timestamp=1366255439000&market=MTGOX&price=70.5'
-		last_response.should be_ok
+		last_response.status.should == 200
 		Price.all.size.should == 1
 		post '/price', 'timestamp=1366255539000&market=MTGOX&price=70.5'
-		last_response.should be_ok
+		last_response.status.should == 200
 		Price.all.size.should == 2
 	end
 

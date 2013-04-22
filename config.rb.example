@@ -3,5 +3,4 @@ set :database, "postgres://user:pass@host:port/database"
 $config = {}
 $config['IRON_KEY'] = 'XXXXX_XXXXXXXXX-XXXXXXXXXXX' 
 $config['IRON_PROJECT'] = "XXXXXXXXXXXXXXXXXXXXXXXXX"
-
-$config['SECRET'] = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+$config['HMAC_KEY'] = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"

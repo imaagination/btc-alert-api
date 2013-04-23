@@ -1,7 +1,0 @@
->> Writing PID to thin.pid
->> Thin web server (v1.4.1 codename Chromeo)
->> Maximum connections set to 1024
->> Listening on 127.0.0.1:9876, CTRL+C to stop
->> Waiting for 1 connection(s) to finish, can take up to 30 sec, CTRL+C to stop now
->> Stopping ...
->> Exiting!

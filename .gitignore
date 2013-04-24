@@ -1,4 +1,4 @@
 config.rb
 *.swp
 *.log
-
+nohup.out

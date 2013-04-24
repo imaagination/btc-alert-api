@@ -45,4 +45,15 @@ describe "HmacVerifier" do
 		@test_session.get(@path + @query, "", { "HTTP_X_SIGNATURE" => "WRONG_SIGNATURE" }) 
 		@test_session.last_response.status.should == 401
 	end
+
+	it "should rewind rack input" do
+		app = double("app")
+		app.should_receive(:call) do |arg|
+			arg['rack.input'].read.length > 0 ? [200, {}, []] : [400, {}, []]
+		end
+		@rewind_session = Rack::MockSession.new HmacVerifier.new(app, :secret => @secret)
+		@rewind_test_session = Rack::Test::Session.new @rewind_session
+		@rewind_test_session.post(@path, @body, { "HTTP_X_SIGNATURE" => @post_digest })
+		@rewind_test_session.last_response.status.should == 200
+	end
 end

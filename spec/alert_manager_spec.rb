@@ -10,11 +10,17 @@ describe "AlertManager" do
 			:user_id => "test@example.com" })
 		alert.save
 		alert2 = Alert.new({ :delivery_type => "EMAIL",
-			:destination => "1234567890",
+			:destination => "test@example.com",
 			:threshold => 80.01,
 			:alert_when => "OVER",
 			:user_id => "test@example.com" })
 		alert2.save
+		alert3 = Alert.new({ :delivery_type => "EMAIL",
+			:destination => "test@example.com",
+			:threshold => 80.01,
+			:alert_when => "UNDER",
+			:user_id => "test@example.com" })
+		alert3.save
 	end
 
 	it "should get \"OVER\" alerts when the price exceeds the threshold" do 
@@ -43,5 +49,15 @@ describe "AlertManager" do
 		triggered_alerts.size.should == 1
 		triggered_alerts[0].delivery_type.should == "SMS"
 
+	end
+
+	it "should trigger an alert when the price breaks the threshold going up" do
+		triggered_alerts = AlertManager.get_sms_alerts(60.01, 100)
+		triggered_alerts.size.should == 1
+	end
+
+	it "should trigger an alert when the price breaks the threshold going down" do
+		triggered_alerts = AlertManager.get_email_alerts(80.01, 50)
+		triggered_alerts.size.should == 1
 	end
 end

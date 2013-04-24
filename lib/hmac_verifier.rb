@@ -15,6 +15,7 @@ class HmacVerifier
 				['{"status":"failure", "messages":["HMAC signature invalid"]}']]
 		end
 		return [200, {}, ["No app configured"]] if @app.nil?
+		env['rack.input'].rewind
 		@app.call(env)
 	end
 

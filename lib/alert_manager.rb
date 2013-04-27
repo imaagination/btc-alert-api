@@ -1,22 +1,17 @@
 module AlertManager
 
-	def self.get_alerts(beg_val, end_val)
-		Alert.where("(threshold >= ? AND threshold < ? AND alert_when = ?) OR \
-			(threshold <= ? AND threshold > ? AND alert_when = ?)",
-			beg_val, end_val, "OVER", beg_val, end_val, "UNDER")		
+	def self.get_alerts(opts = {})
+		query = Alert.select("*")
+		if opts[:second_last] and opts[:last]
+			high = opts.slice(:second_last, :last).values.max
+			puts high
+			low = opts.slice(:second_last, :last).values.min
+			query = query.where("threshold >= ? AND threshold <= ?", low, high)
+			query = query.where("alert_when = ?", 
+				opts[:second_last] < opts[:last] ? "OVER" : "UNDER")
+		end
+		query = query.where(:delivery_type => opts["type"]) unless opts["type"].nil?
+		pp query
 	end
 
-	def self.get_email_alerts(beg_val, end_val)
-		Alert.where("((threshold >= ? AND threshold < ? AND alert_when = ?) OR \
-			(threshold <= ? AND threshold > ? AND alert_when = ?)) AND \
-			delivery_type = ?",
-			beg_val, end_val, "OVER", beg_val, end_val, "UNDER", "EMAIL")
-	end
-
-	def self.get_sms_alerts(beg_val, end_val)
-		Alert.where("((threshold >= ? AND threshold < ? AND alert_when = ?) OR \
-			(threshold <= ? AND threshold > ? AND alert_when = ?)) AND \
-			delivery_type = 'SMS'",
-			beg_val, end_val, "OVER", beg_val, end_val, "UNDER")		
-	end
 end

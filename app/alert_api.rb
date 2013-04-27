@@ -83,7 +83,8 @@ class App < Sinatra::Base
 
 	post '/price' do
 		# Save price
-		params[:timestamp] = Time.at(params[:timestamp].to_f / 1000)
+		params["timestamp"] = Time.at(params["timestamp"].to_f / 1000)
+		params.slice!("timestamp", "price", "market")
 		price = Price.new params
 		if price.save then
 			# Grab last two prices
@@ -91,17 +92,21 @@ class App < Sinatra::Base
 
 			if last_prices.size == 2
 				# Find the triggered alerts
-				beg_val = last_prices[1].price
-				end_val = last_prices[0].price
-				sms_alerts = AlertManager.get_sms_alerts(beg_val, end_val).to_a
-				email_alerts = AlertManager.get_email_alerts(beg_val, end_val).to_a
+				sms_alerts = AlertManager.get_alerts({ 
+					second_last: last_prices[1].price,
+					last: last_prices[0].price, 
+					type: "SMS" }).to_a
+				email_alerts = AlertManager.get_alerts({ 
+					second_last: last_prices[1].price,
+					last: last_prices[0].price, 
+					type: "EMAIL" }).to_a
 
 				ironmq = IronMQ::Client.new({:token => $config['IRON_KEY'],
 					:project_id => $config['IRON_PROJECT']})
 
 				if email_alerts.size > 0
 					# Convert alerts to array of hashes
-					email_alerts.map! {|i| { :body => i.attributes.merge({:price => end_val}).to_json } }
+					email_alerts.map! {|i| { :body => i.attributes.merge({:price => price.price}).to_json } }
 
 					email_queue = ironmq.queue("email_alerts")
 					puts "Posting #{email_alerts.size} email alert(s)"
@@ -110,7 +115,7 @@ class App < Sinatra::Base
 
 				if sms_alerts.size > 0
 					# Convert alerts to array of hashes
-					sms_alerts.map! {|i| { :body => i.attributes.merge({:price => end_val}).to_json } }
+					sms_alerts.map! {|i| { :body => i.attributes.merge({:price => price.price}).to_json } }
 
 					sms_queue = ironmq.queue("sms_alerts")
 					sms_queue.post(sms_alerts)

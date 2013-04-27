@@ -146,9 +146,15 @@ describe "Pricing API" do
 			:user_id => "test@example.com"})
 
 		# Alert stubs
-		AlertManager.stub(:get_sms_alerts).and_return([sms_alert])
-		AlertManager.stub(:get_email_alerts).and_return([email_alert])
-		AlertManager.stub(:get_alerts).and_return([sms_alert, email_alert])
+		AlertManager.stub(:get_alerts) do |arg|
+			if arg[:type] == "EMAIL"
+				[email_alert]
+			elsif arg[:type] == "SMS"
+				[sms_alert]
+			else
+				[sms_alert, email_alert]
+			end
+		end
 
 		# Queue stubs
 		@ironmq = IronMQ::Client.new(:token => "TEST_TOKEN", 

@@ -9,7 +9,7 @@ module AlertManager
 			query = query.where("alert_when = ?", 
 				opts[:second_last] < opts[:last] ? "OVER" : "UNDER")
 		end
-		query = query.where(:delivery_type => opts["type"]) unless opts["type"].nil?
+		query = query.where(:delivery_type => opts[:type]) unless opts[:type].nil?
 		return query
 	end
 

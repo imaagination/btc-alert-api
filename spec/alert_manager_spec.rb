@@ -62,4 +62,9 @@ describe "AlertManager" do
 		triggered_alerts = AlertManager.get_alerts({ second_last: 80.01, last: 50 })
 		triggered_alerts.index { |a| a.id == @alert3.id }.should_not == nil
 	end
+
+	it "should not get EMAIL alerts when asked for SMS alerts" do
+		triggered_alerts = AlertManager.get_alerts({ second_last: 60, last: 100, type: "SMS" })
+		triggered_alerts.index { |a| a.id == @alert2.id }.should == nil
+	end
 end

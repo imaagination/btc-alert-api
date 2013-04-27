@@ -1,4 +1,5 @@
 require 'spec_helper'
+require File.dirname(__FILE__) + '/../app/alert_api.rb'
 require File.dirname(__FILE__) + '/../lib/alert_manager'
 
 describe "AlertManager" do

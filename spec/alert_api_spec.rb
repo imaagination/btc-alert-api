@@ -75,14 +75,30 @@ describe "Alert CRUD API" do
 			:user_id => "test@example.com"})
 		alert.save
 		Alert.all.size.should == 1
-		delete "/alerts/#{alert.id}"
+		delete "/alerts/#{alert.id}?user_id=test@example.com"
 		last_response.should be_ok
 		Alert.all.size.should == 0
 	end
 
 	it "should return not found on deleting nonexistent alert" do
-		delete "/alerts/12345"
+		delete "/alerts/12345?user_id=test@example.com"
 		last_response.should be_not_found
+	end
+
+	it "should return bad request when trying to delete without a user id" do
+		delete "/alerts/12345"
+		last_response.should be_bad_request
+	end
+
+	it "should return unauthorized when trying to delete another users alert" do
+		alert = Alert.new({:delivery_type => "SMS",
+			:destination => "1234567890",
+			:threshold => 70.2,
+			:alert_when => "OVER",
+			:user_id => "test@example.com"})
+		alert.save
+		delete "/alerts/#{alert.id}?user_id=not_test@example.com"
+		last_response.status.should == 401
 	end
 
 	it "should update alerts" do
@@ -96,6 +112,22 @@ describe "Alert CRUD API" do
 		last_response.status.should == 200
 		parsed_response = JSON.parse(last_response.body)
 		parsed_response["alerts"][0]["destination"].should == "1234567891"
+	end
+
+	it "should reject alerts without a user id" do
+		put "/alerts/12345"
+		last_response.status.should == 400
+	end
+
+	it "should reject updates to other users alerts" do
+		alert = Alert.new({:delivery_type => "SMS",
+			:destination => "1234567890",
+			:threshold => 70.2,
+			:alert_when => "OVER",
+			:user_id => "test@example.com"})
+		alert.save
+		put "/alerts/#{alert.id}", 'delivery_type=SMS&destination=1234567891&threshold=45.267&alert_when=OVER&user_id=not_test@example.com'
+		last_response.status.should == 401
 	end
 end
 

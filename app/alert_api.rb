@@ -41,13 +41,19 @@ class App < Sinatra::Base
 	end
 
 	put '/alerts/:id' do
+		if params['user_id'].nil?
+			body({ status: "failure", messages: [ "User id required" ]  })
+			halt 400
+		end
 		alert = Alert.find_by_id(params['id'])
-		params.slice!('delivery_type', 'destination', 'threshold', 'alert_when')
+		params.slice!('delivery_type', 'destination', 'threshold', 'alert_when', 'user_id')
 		if alert.nil?
 			body({ status: "failure", messages: [ "Alert not found" ] }.to_json)
 			halt 404
-		end
-		if alert.update_attributes(params)
+		elsif alert.user_id != params['user_id']
+			status 401
+			{ status: "failure", messages: [ "Cannot update other users alerts" ]}.to_json
+		elsif alert.update_attributes(params)
 			{ status: "success", alerts: [ alert ] }.to_json
 		else
 			status 400
@@ -56,10 +62,17 @@ class App < Sinatra::Base
 	end
 
 	delete '/alerts/:id' do
+		if params['user_id'].nil?
+			body({ status: "failure", messages: [ "User id required to delete" ]}.to_json)
+			halt 400	
+		end
 		alert = Alert.find_by_id(params[:id])
 		if alert.nil? 
 			status 404
 			{ status: "failure", messages: [ "Alert not found" ] }.to_json
+		elsif alert.user_id != params['user_id']
+			status 401
+			{ status: "failure", messages: [ "Cannot delete alerts that belong to other users" ]}.to_json
 		elsif alert.destroy
 			{ status: "success" }.to_json
 		else
